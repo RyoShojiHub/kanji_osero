@@ -119,3 +119,9 @@ class Game(object):
                     if self.is_valid_move(x, y, player):
                         return True
         return False
+
+    def reset_game(self):
+        self.board.board = self.board.initialize_board()
+        self.board.kanji_board = self.board.initialize_kanji_board()
+        self.current_player = BLACK
+        self.count_score()

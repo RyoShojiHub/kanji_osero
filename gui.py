@@ -26,6 +26,12 @@ class Gui(object):
                                          text=f'間違い: {self.fault_count}/{MAX_FAULT_COUNT}',
                                          font=("Arial", 14))
         self.fault_label.place(x=800, y=130)
+        self.pass_button = tkinter.Button(self.root, text="パス", command=self.pass_turn, width=12, height=3, font=("Arial", 16))
+        self.pass_button.place(x=800, y=200)
+        self.giveup_button = tkinter.Button(self.root, text="ギブアップ\n(ゲーム終了)", command=self.give_up, width=12, height=3, font=("Arial", 16))
+        self.giveup_button.place(x=1000, y=200)
+        self.reset_button = tkinter.Button(self.root, text="ゲームリセット", command=self.reset_game, width=12, height=3, font=("Arial", 16))
+        self.reset_button.place(x=900, y=600)
 
         self.update_display()
         self.canvas.bind("<Button-1>", self.handle_click)
@@ -46,6 +52,9 @@ class Gui(object):
 
     def handle_click(self, event):
         """クリックイベントを処理"""
+        if self.game_over:
+            return
+
         x = (event.x - 20) // 90
         y = (event.y - 20) // 90
 
@@ -85,10 +94,34 @@ class Gui(object):
                                 \n{self.game.winner()}")
             self.game_over = True
 
-        if self.game.pass_check() and not self.game_over:
+        if self.game.pass_check():
             messagebox.showinfo("パス", "プレイヤーがパスしました")
             self.game.switch_player()
             self.update_display()
+
+    def pass_turn(self):
+        """プレイヤーがパスを選択した場合"""
+        if self.game_over:
+            return
+        messagebox.showinfo("パス", "プレイヤーがパスしました")
+        self.game.switch_player()  # プレイヤーを交代
+        self.update_display()
+
+    def give_up(self):
+        """プレイヤーがギブアップを選択した場合"""
+        if self.game_over:
+            return
+        messagebox.showinfo("ギブアップ", f"プレイヤーがギブアップしました。\
+        \n黒:{self.game.score['black']}  白:{self.game.score['white']}\
+        \n{self.game.winner()}")
+        self.game_over = True
+
+    def reset_game(self):
+        """リセットボタンを押したときにゲームをリセットする"""
+        self.game.reset_game()
+        self.game_over = False
+        self.fault_count = 0
+        self.update_display()
 
     def update_display(self):
         """表示を更新"""
