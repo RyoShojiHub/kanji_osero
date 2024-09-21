@@ -1,49 +1,94 @@
 import tkinter
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 
 EMPTY = 0
 BLACK = 1
 WHITE = 2
+MAX_FAULT_COUNT = 3
 
 
 class Gui(object):
     def __init__(self, root, game):
         self.root = root
-        self.game = game
-        self.canvas = tkinter.Canvas(root, width=1000, height=800)
+        self.game = game  # Gameクラスのインスタンス
+        self.canvas = tkinter.Canvas(self.root, width=1200, height=800)
         self.canvas.pack()
-        self.root.title('オセロ')
-        self.current_player_label = tkinter.Label(root, text='', font=("Arial", 14))
-        self.current_player_label.pack()
+        self.root.title('漢字オセロ')
+
+        self.game_over = False
+        self.fault_count = 0
+
+        self.current_player_label = tkinter.Label(self.root, text='', font=("Arial", 14))
+        self.current_player_label.place(x=800, y=50)
+        self.score_label = tkinter.Label(self.root, text='', font=("Arial", 14))
+        self.score_label.place(x=800, y=90)
+        self.fault_label = tkinter.Label(self.root,
+                                         text=f'間違い: {self.fault_count}/{MAX_FAULT_COUNT}',
+                                         font=("Arial", 14))
+        self.fault_label.place(x=800, y=130)
+
         self.update_display()
         self.canvas.bind("<Button-1>", self.handle_click)
 
     def draw_board(self):
+        """盤面の描画を行う"""
         for y in range(8):
             for x in range(8):
-                self.canvas.create_rectangle(x*80+60, y*80+60, x*80+140, y*80+140, fill='green')
+                self.canvas.create_rectangle(x*90+20, y*90+20, x*90+110, y*90+110, fill='green')
                 stone = self.game.board.get_stone(x, y)
                 if stone == BLACK:
-                    self.canvas.create_oval(x*80+60, y*80+60, x*80+140, y*80+140, fill='black')
+                    self.canvas.create_oval(x*90+20, y*90+20, x*90+110, y*90+110, fill='black')
                 elif stone == WHITE:
-                    self.canvas.create_oval(x*80+60, y*80+60, x*80+140, y*80+140, fill='white')
+                    self.canvas.create_oval(x*90+20, y*90+20, x*90+110, y*90+110, fill='white')
+                else:
+                    kanji = self.game.board.kanji_board[y][x][0]
+                    self.canvas.create_text(x*90+65, y*90+65, text=kanji, font=("Arial", 20))
 
     def handle_click(self, event):
         """クリックイベントを処理"""
-        x = (event.x - 60) // 80
-        y = (event.y - 60) // 80
+        x = (event.x - 20) // 90
+        y = (event.y - 20) // 90
 
         if not (0 <= x < 8 and 0 <= y < 8):
             return
 
-        if self.game.is_valid_move(x, y):
-            self.game.place_stone(x, y)
+        if self.game.is_valid_move(x, y):  # 石を置けるか検証
+            # 漢字の読みを入力
+            reading_input = simpledialog.askstring("読みを入力",
+                                                   f'"{self.game.board.kanji_board[y][x][0]}"の読みをひらがなで入力してください\
+                                                   \n(送り仮名まで入力してください):')
+            # キャンセルされた場合
+            if reading_input is None:
+                return
+            # 読みが正しいかチェック
+            if self.game.check_reading(x, y, reading_input):
+                self.game.place_stone(x, y)
+                self.game.switch_player()
+                self.update_display()
+                self.fault_count = 0
+                self.fault_label.config(text=f"間違い: {self.fault_count}/{MAX_FAULT_COUNT}")
+            else:
+                self.fault_count += 1
+                if self.fault_count < MAX_FAULT_COUNT:  # 一定回数以上間違えた場合パス
+                    messagebox.showinfo("間違い", f"間違いです。\n残り回数{3-self.fault_count}")
+                    self.fault_label.config(text=f"間違い: {self.fault_count}/{MAX_FAULT_COUNT}")
+                else:
+                    messagebox.showinfo("パス", f"{self.fault_count}回間違えたため、相手の手番になります。")
+                    self.game.switch_player()
+                    self.update_display()
+                    self.fault_count = 0
+                    self.fault_label.config(text=f"間違い: {self.fault_count}/{MAX_FAULT_COUNT}")
+
+        if not self.game.can_player_move():
+            messagebox.showinfo("ゲームセット",
+                                f"黒:{self.game.score['black']}  白:{self.game.score['white']}\
+                                \n{self.game.winner()}")
+            self.game_over = True
+
+        if self.game.pass_check() and not self.game_over:
+            messagebox.showinfo("パス", "プレイヤーがパスしました")
             self.game.switch_player()
             self.update_display()
-            self.update_current_player_display()
-
-        if self.game.pass_check():
-            messagebox.showinfo("パス", "プレイヤーがパスしました")
 
     def update_display(self):
         """表示を更新"""
@@ -58,3 +103,6 @@ class Gui(object):
         else:
             player_text = "現在のプレイヤー: 白"
         self.current_player_label.config(text=player_text)
+
+        score_text = f"黒の石: {self.game.score['black']}  白の石: {self.game.score['white']}"
+        self.score_label.config(text=score_text)

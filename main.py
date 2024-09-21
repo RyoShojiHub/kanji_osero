@@ -1,6 +1,8 @@
 import tkinter
 
-import game, gui
+import game
+import gui
+
 
 def main():
     root = tkinter.Tk()
@@ -8,6 +10,7 @@ def main():
     gm = game.Game()
     ui = gui.Gui(root, gm)
     root.mainloop()
+
 
 if __name__ == '__main__':
     main()

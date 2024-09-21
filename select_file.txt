@@ -1,0 +1,3 @@
+kanji.txt
+
+kanji_dif.txt
