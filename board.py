@@ -55,7 +55,3 @@ class Board(object):
     def get_stone(self, x, y):
         """石の情報を取得する"""
         return self.board[y][x]
-
-    def display_board(self):
-        for y in self.board:
-            print(y)

@@ -94,6 +94,7 @@ class Game(object):
         self.score['white'] = white_score
 
     def winner(self):
+        """勝者を返す"""
         if self.score['black'] < self.score['white']:
             return "白の勝ち"
         elif self.score['black'] > self.score['white']:
